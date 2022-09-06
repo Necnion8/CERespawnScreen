@@ -1,0 +1,6 @@
+name: CERespawnScreen
+version: '${version}'
+main: com.gmail.necnionch.myplugin.cerespawnscreen.CERespawnScreen
+api-version: 1.15
+depend: [ CommandAPI ]
+authors: [ Necnion8 ]
