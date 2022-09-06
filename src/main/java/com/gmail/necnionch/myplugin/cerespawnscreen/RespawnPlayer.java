@@ -70,7 +70,6 @@ public class RespawnPlayer {
     public void executeFunctions() {
         if (functions == null)
             return;
-//        SilentCommandSender sender = new SilentCommandSender();
 
         Location location = player.getLocation();
         location.setY(-256);
