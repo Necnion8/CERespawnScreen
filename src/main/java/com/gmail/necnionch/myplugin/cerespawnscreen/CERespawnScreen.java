@@ -1,5 +1,6 @@
 package com.gmail.necnionch.myplugin.cerespawnscreen;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import dev.jorel.commandapi.CommandAPI;
@@ -25,15 +26,14 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.*;
 import org.bukkit.util.Vector;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public final class CERespawnScreen extends JavaPlugin implements Listener {
     public static final String SCORE_NAME = "CERespawnTimer";
@@ -75,6 +75,9 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
                         .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
                         .withArguments(new FunctionArgument("timerFunction"))
                         .executesNative(this::execStop))
+                .withSubcommand(new CommandAPICommand("stop")
+                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .executesNative(this::execStop))
                 .register();
     }
 
@@ -99,19 +102,18 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
         spectators.add(player);
         respawn.savePlayerState(true);
 
-        AtomicInteger remaining = new AtomicInteger(Math.max(1, respawn.getDelay()));
-
-        updateTimerScore(player, remaining.get());
+        Score score = updateTimerScore(player, Math.max(1, respawn.getDelay()));
         respawn.executeFunctions();
 
         spectatorsTimer.put(player, getServer().getScheduler().runTaskTimer(this, () -> {
-            int rem = remaining.decrementAndGet();
+            int rem = score.getScore() - 1;
+            score.setScore(rem);
+
             if (rem <= 0) {
                 stopRespawnScreen(respawn);
                 return;
             }
 
-            updateTimerScore(player, remaining.get());
             respawn.executeFunctions();
 
         }, 20, 20));
@@ -129,18 +131,52 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
         updateTimerScore(player, 0);
         respawn.executeFunctions();
 
+        resetTimerScore(player);
+
         Bukkit.getOnlinePlayers().forEach(p -> {
             p.showPlayer(this, player);
         });
     }
 
-    public void updateTimerScore(Player player, int score) {
+    public Score updateTimerScore(Player player, int score) {
         Scoreboard sb = getServer().getScoreboardManager().getMainScoreboard();
         Objective objective = sb.getObjective(SCORE_NAME);
         if (objective == null)
             objective = sb.registerNewObjective(SCORE_NAME, "dummy", SCORE_NAME);
 
-        objective.getScore(player.getName()).setScore(score);
+        Score eScore = objective.getScore(player.getName());
+        eScore.setScore(score);
+        return eScore;
+    }
+
+    public void resetTimerScore(Player player) {
+        Scoreboard sb = getServer().getScoreboardManager().getMainScoreboard();
+        Objective objective = sb.getObjective(SCORE_NAME);
+        if (objective == null)
+            return;
+
+        // get setting
+        DisplaySlot displaySlot = objective.getDisplaySlot();
+        RenderType renderType = objective.getRenderType();
+        String displayName = objective.getDisplayName();
+        String criteria = objective.getCriteria();
+
+        // get scores
+        Map<String, Integer> scoreValues = sb.getEntries().stream()
+                .map(objective::getScore)
+                .filter(Score::isScoreSet)
+                .filter(s -> !s.getEntry().equals(player.getName()))
+                .collect(Collectors.toMap(Score::getEntry, Score::getScore));
+
+        // recreate
+        objective.unregister();
+        Objective newObjective = sb.registerNewObjective(SCORE_NAME, criteria, displayName, renderType);
+        newObjective.setDisplaySlot(displaySlot);
+
+        // rollback scores
+        scoreValues.forEach((e, v) -> {
+            newObjective.getScore(e).setScore(v);
+        });
     }
 
 
@@ -148,7 +184,8 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
         @SuppressWarnings("unchecked")
         List<Player> players = (List<Player>) args[0];
         settings.keySet().removeIf(players::contains);
-        sender.sendMessage(ChatColor.GOLD + "対象のプレイヤーのリスポーンスクリーン設定を解除しました");
+        if (!players.isEmpty())
+            sender.sendMessage(ChatColor.GOLD + "対象のプレイヤーのリスポーンスクリーン設定を解除しました");
         return players.size();
     }
 
@@ -161,19 +198,20 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
         players.forEach(p -> {
             settings.put(p, new RespawnPlayer(p, delay, functions));
         });
-        sender.sendMessage(ChatColor.GOLD + "対象のプレイヤーのリスポーンスクリーンを設定しました");
+        if (!players.isEmpty())
+            sender.sendMessage(ChatColor.GOLD + "対象のプレイヤーのリスポーンスクリーンを設定しました");
         return players.size();
     }
 
     private int execStart(NativeProxyCommandSender sender, Object[] args) {
         @SuppressWarnings("unchecked")
-        List<Player> players = (List<Player>) args[0];
+        List<Player> players = Lists.newArrayList((List<Player>) args[0]);
         int delay = (args.length >= 2 ) ? (int) args[1] : -1;
         FunctionWrapper[] functions = (args.length >= 3) ? (FunctionWrapper[]) args[2] : null;
 
+        players.removeIf(spectators::contains);
         players.forEach(p -> {
             RespawnPlayer setting = settings.get(p);
-
             setting = new RespawnPlayer(p,
                     (delay != -1) ? delay : ((setting != null) ? setting.getDelay() : 10),
                     (functions == null && setting != null) ? setting.getFunctions() : functions
@@ -181,22 +219,28 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
             settings.put(p, setting);
             startRespawnScreen(setting);
         });
-        sender.sendMessage(ChatColor.GOLD + "対象のプレイヤーのリスポーンスクリーンを開始しました");
+        if (!players.isEmpty())
+            sender.sendMessage(ChatColor.GOLD + "対象のプレイヤーのリスポーンスクリーンを開始しました");
         return players.size();
     }
 
     private int execStop(NativeProxyCommandSender sender, Object[] args) {
         @SuppressWarnings("unchecked")
-        List<Player> players = (List<Player>) args[0];
+        List<Player> players = Lists.newArrayList((List<Player>) args[0]);
         FunctionWrapper[] functions = (args.length >= 2) ? (FunctionWrapper[]) args[1] : null;
 
+        players.removeIf(p -> !spectators.contains(p));
         players.forEach(p -> {
             RespawnPlayer setting = settings.get(p);
-            if (setting == null)
+            if (setting == null) {
                 setting = new RespawnPlayer(p, 0, functions);
+            } else if (functions != null) {
+                setting.setFunctions(functions);
+            }
             stopRespawnScreen(setting);
         });
-        sender.sendMessage(ChatColor.GOLD + "対象のプレイヤーのリスポーンスクリーンを停止しました");
+        if (!players.isEmpty())
+            sender.sendMessage(ChatColor.GOLD + "対象のプレイヤーのリスポーンスクリーンを停止しました");
         return players.size();
     }
 
@@ -282,6 +326,13 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
+        if (spectators.contains(event.getPlayer())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onItemSwap(PlayerSwapHandItemsEvent event) {
         if (spectators.contains(event.getPlayer())) {
             event.setCancelled(true);
         }

@@ -15,7 +15,7 @@ public class RespawnPlayer {
 
     private final Player player;
     private final int delay;
-    private final @Nullable FunctionWrapper[] functions;
+    private @Nullable FunctionWrapper[] functions;
     private GameMode gameMode;
     private boolean flying;
     private boolean allowFlight;
@@ -65,6 +65,10 @@ public class RespawnPlayer {
 
     public FunctionWrapper[] getFunctions() {
         return functions != null ? functions : new FunctionWrapper[0];
+    }
+
+    public void setFunctions(FunctionWrapper[] functions) {
+        this.functions = functions;
     }
 
     public void executeFunctions() {
