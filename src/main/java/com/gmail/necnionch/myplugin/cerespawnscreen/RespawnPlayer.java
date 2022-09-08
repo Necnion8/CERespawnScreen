@@ -81,7 +81,7 @@ public class RespawnPlayer {
         try {
             for (FunctionWrapper function : functions) {
                 String funcKey = function.getKey().toString();
-                Bukkit.dispatchCommand(sender, String.format("execute as %s at @s run function %s", player.getUniqueId(), funcKey));
+                Bukkit.dispatchCommand(sender, String.format("execute as \"%s\" at @s run function %s", player.getUniqueId(), funcKey));
             }
         } finally {
             sender.remove();
