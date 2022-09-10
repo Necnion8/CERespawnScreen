@@ -13,10 +13,8 @@ import dev.jorel.commandapi.wrappers.NativeProxyCommandSender;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
+import org.bukkit.entity.minecart.CommandMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -26,14 +24,15 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.scoreboard.*;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
+import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class CERespawnScreen extends JavaPlugin implements Listener {
     public static final String SCORE_NAME = "CERespawnTimer";
@@ -138,6 +137,10 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
         });
     }
 
+    public void stopRespawnScreen(Player player) {
+        Optional.ofNullable(settings.remove(player)).ifPresent(this::stopRespawnScreen);
+    }
+
     public Score updateTimerScore(Player player, int score) {
         Scoreboard sb = getServer().getScoreboardManager().getMainScoreboard();
         Objective objective = sb.getObjective(SCORE_NAME);
@@ -155,28 +158,41 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
         if (objective == null)
             return;
 
-        // get setting
-        DisplaySlot displaySlot = objective.getDisplaySlot();
-        RenderType renderType = objective.getRenderType();
-        String displayName = objective.getDisplayName();
-        String criteria = objective.getCriteria();
+//        // get setting
+//        DisplaySlot displaySlot = objective.getDisplaySlot();
+//        RenderType renderType = objective.getRenderType();
+//        String displayName = objective.getDisplayName();
+//        String criteria = objective.getCriteria();
+//
+//        // get scores
+//        Map<String, Integer> scoreValues = sb.getEntries().stream()
+//                .map(objective::getScore)
+//                .filter(Score::isScoreSet)
+//                .filter(s -> !s.getEntry().equals(player.getName()))
+//                .collect(Collectors.toMap(Score::getEntry, Score::getScore));
+//
+//        // recreate
+//        objective.unregister();
+//        Objective newObjective = sb.registerNewObjective(SCORE_NAME, criteria, displayName, renderType);
+//        newObjective.setDisplaySlot(displaySlot);
+//
+//        // rollback scores
+//        scoreValues.forEach((e, v) -> {
+//            newObjective.getScore(e).setScore(v);
+//        });
 
-        // get scores
-        Map<String, Integer> scoreValues = sb.getEntries().stream()
-                .map(objective::getScore)
-                .filter(Score::isScoreSet)
-                .filter(s -> !s.getEntry().equals(player.getName()))
-                .collect(Collectors.toMap(Score::getEntry, Score::getScore));
 
-        // recreate
-        objective.unregister();
-        Objective newObjective = sb.registerNewObjective(SCORE_NAME, criteria, displayName, renderType);
-        newObjective.setDisplaySlot(displaySlot);
-
-        // rollback scores
-        scoreValues.forEach((e, v) -> {
-            newObjective.getScore(e).setScore(v);
-        });
+        // hacky
+        Location location = player.getLocation();
+        location.setY(-256);
+        CommandMinecart sender = (CommandMinecart) player.getWorld().spawnEntity(location, EntityType.MINECART_COMMAND);
+        try {
+            Bukkit.dispatchCommand(sender, "scoreboard players reset " + player.getName() + " " + SCORE_NAME);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            sender.remove();
+        }
     }
 
 
@@ -252,10 +268,7 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerQuit(PlayerQuitEvent event) {
-        spectators.remove(event.getPlayer());
-        RespawnPlayer respawn = settings.remove(event.getPlayer());
-        if (respawn != null)
-            stopRespawnScreen(respawn);
+        stopRespawnScreen(event.getPlayer());
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -313,7 +326,7 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
-        spectators.remove(event.getPlayer());
+        stopRespawnScreen(event.getPlayer());
     }
 
 

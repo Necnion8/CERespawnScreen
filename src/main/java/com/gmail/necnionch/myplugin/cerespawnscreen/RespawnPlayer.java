@@ -7,8 +7,12 @@ import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.minecart.CommandMinecart;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public class RespawnPlayer {
@@ -21,6 +25,7 @@ public class RespawnPlayer {
     private boolean allowFlight;
     private boolean canPickupItems;
     private boolean collidable;
+    private @NotNull Collection<PotionEffect> activePotionEffects;
 
     public RespawnPlayer(Player player, int delay, @Nullable FunctionWrapper[] functions) {
         this.player = player;
@@ -34,6 +39,7 @@ public class RespawnPlayer {
         flying = player.isFlying();
         canPickupItems = player.getCanPickupItems();
         collidable = player.isCollidable();
+        activePotionEffects = player.getActivePotionEffects();
 
         if (specSet) {
             player.setGameMode(GameMode.SURVIVAL);
@@ -41,6 +47,7 @@ public class RespawnPlayer {
             player.setFlying(true);
             player.setCanPickupItems(false);
             player.setCollidable(false);
+            player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
         }
         return this;
     }
@@ -52,6 +59,8 @@ public class RespawnPlayer {
         player.setFlying(flying);
         player.setCanPickupItems(canPickupItems);
         player.setCollidable(collidable);
+        player.removePotionEffect(PotionEffectType.INVISIBILITY);
+        player.addPotionEffects(activePotionEffects);
     }
 
 
