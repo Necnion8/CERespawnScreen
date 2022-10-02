@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.gmail.necnionch.myplugin'
-version = '1.0.2-SNAPSHOT'
+version = '1.0.2-SNAPSHOT-1.19'
 
 repositories {
     mavenCentral()
@@ -20,10 +20,10 @@ repositories {
 dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.15.2-R0.1-SNAPSHOT'
     implementation 'org.jetbrains:annotations:23.0.0'
-    implementation files("libs/CommandAPI.jar")
+    implementation files("libs/CommandAPI-8.5.1.jar")
 }
 
-def targetJavaVersion = 8
+def targetJavaVersion = 17
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion

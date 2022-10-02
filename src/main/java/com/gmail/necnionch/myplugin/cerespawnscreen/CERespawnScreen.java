@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.arguments.EntitySelector;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import dev.jorel.commandapi.arguments.FunctionArgument;
 import dev.jorel.commandapi.arguments.IntegerArgument;
@@ -47,35 +48,35 @@ public final class CERespawnScreen extends JavaPlugin implements Listener {
         new CommandAPICommand("cerespawn")
                 .withPermission("cerespawnscreen.command.cerespawn")
                 .withSubcommand(new CommandAPICommand("reset")
-                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .withArguments(new EntitySelectorArgument<Player>("players", EntitySelector.MANY_PLAYERS))
                         .executesNative(this::execReset))
                 .withSubcommand(new CommandAPICommand("set")
-                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .withArguments(new EntitySelectorArgument<Player>("players", EntitySelector.MANY_PLAYERS))
                         .withArguments(new IntegerArgument("respawnSeconds"))
                         .withArguments(new FunctionArgument("timerFunction"))
                         .executesNative(this::execSet))
                 .withSubcommand(new CommandAPICommand("set")
-                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .withArguments(new EntitySelectorArgument<Player>("players", EntitySelector.MANY_PLAYERS))
                         .withArguments(new IntegerArgument("respawnSeconds"))
                         .executesNative(this::execSet))
                 .withSubcommand(new CommandAPICommand("start")
-                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .withArguments(new EntitySelectorArgument<Player>("players", EntitySelector.MANY_PLAYERS))
                         .withArguments(new IntegerArgument("respawnSeconds"))
                         .withArguments(new FunctionArgument("timerFunction"))
                         .executesNative(this::execStart))
                 .withSubcommand(new CommandAPICommand("start")
-                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .withArguments(new EntitySelectorArgument<Player>("players", EntitySelector.MANY_PLAYERS))
                         .withArguments(new IntegerArgument("respawnSeconds"))
                         .executesNative(this::execStart))
                 .withSubcommand(new CommandAPICommand("start")
-                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .withArguments(new EntitySelectorArgument<Player>("players", EntitySelector.MANY_PLAYERS))
                         .executesNative(this::execStart))
                 .withSubcommand(new CommandAPICommand("stop")
-                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .withArguments(new EntitySelectorArgument<Player>("players", EntitySelector.MANY_PLAYERS))
                         .withArguments(new FunctionArgument("timerFunction"))
                         .executesNative(this::execStop))
                 .withSubcommand(new CommandAPICommand("stop")
-                        .withArguments(new EntitySelectorArgument("players", EntitySelectorArgument.EntitySelector.MANY_PLAYERS))
+                        .withArguments(new EntitySelectorArgument<Player>("players", EntitySelector.MANY_PLAYERS))
                         .executesNative(this::execStop))
                 .register();
     }
