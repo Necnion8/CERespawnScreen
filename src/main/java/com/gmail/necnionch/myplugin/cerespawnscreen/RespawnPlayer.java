@@ -47,6 +47,7 @@ public class RespawnPlayer {
             player.setFlying(true);
             player.setCanPickupItems(false);
             player.setCollidable(false);
+            player.setFireTicks(0);
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
         }
         return this;
@@ -59,6 +60,7 @@ public class RespawnPlayer {
         player.setFlying(flying);
         player.setCanPickupItems(canPickupItems);
         player.setCollidable(collidable);
+        player.setFireTicks(0);
         player.removePotionEffect(PotionEffectType.INVISIBILITY);
         Optional.ofNullable(activePotionEffects).ifPresent(player::addPotionEffects);
     }
