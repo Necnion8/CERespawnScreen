@@ -25,7 +25,7 @@ public class RespawnPlayer {
     private boolean allowFlight;
     private boolean canPickupItems;
     private boolean collidable;
-    private @NotNull Collection<PotionEffect> activePotionEffects;
+    private @Nullable Collection<PotionEffect> activePotionEffects;
 
     public RespawnPlayer(Player player, int delay, @Nullable FunctionWrapper[] functions) {
         this.player = player;
@@ -60,7 +60,7 @@ public class RespawnPlayer {
         player.setCanPickupItems(canPickupItems);
         player.setCollidable(collidable);
         player.removePotionEffect(PotionEffectType.INVISIBILITY);
-        player.addPotionEffects(activePotionEffects);
+        Optional.ofNullable(activePotionEffects).ifPresent(player::addPotionEffects);
     }
 
 
